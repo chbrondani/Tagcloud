@@ -4,7 +4,7 @@ import Text.Printf
 
 type Point     = (Float,Float)
 type Color     = (Int,Int,Int)
-type Circle    = (Point,Float)
+type Circle    = (Point,Float,Color)
 
 imageWidth :: Int
 imageWidth = 500
@@ -51,8 +51,7 @@ dadosDataset = do
         print freqs
         
 svgBubbleGen:: Int -> Int -> [Int] -> [String]
-svgBubbleGen w h dataset = [svgCircle ((fromIntegral w/2, fromIntegral h/2), fromIntegral 2249/50) (0,255,0)]
-
+svgBubbleGen w h dataset = [svgCircle ((fromIntegral w/2, fromIntegral h/2),40,(0,255,0))]
 
 -- Gera string representando um circulo em SVG. A cor do circulo esta fixa. 
 -- TODO: Alterar esta funcao para mostrar um circulo de uma cor fornecida como parametro.
@@ -63,8 +62,12 @@ svgBubbleGen w h dataset = [svgCircle ((fromIntegral w/2, fromIntegral h/2), fro
     --          g >= 0 && g <=255 
       --        b >= 0 && b <=255 
 
-svgCircle :: Circle -> Color -> String
-svgCircle ((x,y),raio)(r,g,b)= printf "<circle cx=\"%f\" cy=\"%f\" raio=\"%f\" fill=\"rgb(%d,%d,%d)\" />\n" x y raio r g b 
+lisCircle :: [Circle] -> [String]
+lisCircle [] = []
+lisCircle (h:t) = svgCircle (h) : lisCircle t 
+
+svgCircle :: Circle -> String
+svgCircle ((x,y),raio,(r,g,b)) = printf "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" fill=\"rgb(%d,%d,%d)\" />\n" x y raio r g b
 
 
 -- Configura o viewBox da imagem e coloca retangulo branco no fundo
@@ -77,11 +80,11 @@ svgViewBox w h =
         
 -- Esta função calcula a distância entre 2 círculos
 funcDistancia :: Circle -> Circle -> Float
-funcDistancia ((x1,y1),r1) ((x2,y2),r2) = sqrt (((x2-x1)^2)+((y2-y1)^2))
+funcDistancia ((x1,y1),r1,_) ((x2,y2),r2,_) = sqrt (((x2-x1)^2)+((y2-y1)^2))
 
 -- Esta função verifica se 2 círculos possuem intersecção
 funcInterseccao :: Float -> Circle -> Circle -> Bool
-funcInterseccao funcDistancia (_,r1) (_,r2)
+funcInterseccao funcDistancia (_,r1,_) (_,r2,_)
         |funcDistancia > r1+r2        = False
         |funcDistancia < r1-r2        = False
         |funcDistancia == 0 && r1==r2 = True

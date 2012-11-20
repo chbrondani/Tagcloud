@@ -2,5 +2,5 @@
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <svg width="500" height="500" viewBox="0 0 500 500" version="1.1" xmlns="http://www.w3.org/2000/svg">
 <rect x="0" y="0" width="500" height="500" style="fill:white;stroke:purple;stroke-width:4"/>
-<circle cx="250.0" cy="250.0" raio="44.98" fill="rgb(0,255,0)" />
+<circle cx="250.0" cy="250.0" r="40.0" fill="rgb(0,255,0)" />
 </svg>
