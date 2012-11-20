@@ -43,7 +43,6 @@ svgCloudGen w h dataset =
 -- Esta funcao deve gerar a lista de circulos em formato SVG.
 -- A implementacao atual eh apenas um teste que gera um circulo posicionado no meio da figura.
 -- TODO: Alterar essa funcao para usar os dados do dataset.
-
 dadosDataset :: IO()
 dadosDataset = do 
         strcontent <- readFile "dataset.txt"
@@ -52,8 +51,7 @@ dadosDataset = do
         print freqs
         
 svgBubbleGen:: Int -> Int -> [Int] -> [String]
-svgBubbleGen w h dataset = [svgCircle ((fromIntegral w/2, fromIntegral h/2), fromIntegral 2249/50)]
-                --where dataset = dadosDataset
+svgBubbleGen w h dataset = [svgCircle ((fromIntegral w/2, fromIntegral h/2), fromIntegral 2249/50) (0,255,0)]
 
 
 -- Gera string representando um circulo em SVG. A cor do circulo esta fixa. 
@@ -65,13 +63,8 @@ svgBubbleGen w h dataset = [svgCircle ((fromIntegral w/2, fromIntegral h/2), fro
     --          g >= 0 && g <=255 
       --        b >= 0 && b <=255 
 
---funcEspiral :: Int -> Int -> Int -> Float
---funcEspiral x y a  x = a*5*(cos 5) && y = a*5*(sin 5)
-
-
-svgCircle :: Circle -> String
-svgCircle ((x,y),raio) = printf "<circle cx=\"50\" cy=\"40\" r=\"90\" fill=\"rgb(0,0,255)\" />\n <circle cx=\"50\" cy=\"90\" r=\"80\" fill=\"rgb(255,0,0)\" /> <circle cx=\"10\" cy=\"80\" r=\"20\" fill=\"rgb(0,255,0)\" />"
-
+svgCircle :: Circle -> Color -> String
+svgCircle ((x,y),raio)(r,g,b)= printf "<circle cx=\"%f\" cy=\"%f\" raio=\"%f\" fill=\"rgb(%d,%d,%d)\" />\n" x y raio r g b 
 
 
 -- Configura o viewBox da imagem e coloca retangulo branco no fundo
@@ -80,3 +73,16 @@ svgViewBox w h =
         printf "<svg width=\"%d\" height=\"%d\" viewBox=\"0 0 %d %d\"" w h w h ++ 
                 " version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\">\n" ++
         printf "<rect x=\"0\" y=\"0\" width=\"%d\" height=\"%d\" style=\"fill:white;stroke:purple;stroke-width:4\"/>\n" w h
+        
+        
+-- Esta função calcula a distância entre 2 círculos
+funcDistancia :: Circle -> Circle -> Float
+funcDistancia ((x1,y1),r1) ((x2,y2),r2) = sqrt (((x2-x1)^2)+((y2-y1)^2))
+
+-- Esta função verifica se 2 círculos possuem intersecção
+funcInterseccao :: Float -> Circle -> Circle -> Bool
+funcInterseccao funcDistancia (_,r1) (_,r2)
+        |funcDistancia > r1+r2        = False
+        |funcDistancia < r1-r2        = False
+        |funcDistancia == 0 && r1==r2 = True
+        
