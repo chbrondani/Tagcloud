@@ -3,6 +3,7 @@ module Main where
 import Text.Printf 
 import System.Random
 import Data.List
+import System.IO.Unsafe
 
 type Point     = (Float,Float)
 type Color     = (Int,Int,Int)
@@ -60,10 +61,15 @@ svgViewBox w h =
         printf "<rect x=\"0\" y=\"0\" width=\"%d\" height=\"%d\" style=\"fill:white;stroke:purple;stroke-width:4\"/>\n" w h
             
             
--- Gera string representando um circulo em SVG. A cor do circulo esta fixa. 
--- TODO: Alterar esta funcao para mostrar um circulo de uma cor fornecida como parametro.
+-- Gera string representando um circulo em SVG.
+-- Demorei para encontrar uma funcao que transforme IO Int -> Int. Quem faz isso é a unsafePerformIO
 svgCircle :: Circle -> String
-svgCircle ((x,y),r) = printf "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" fill=\"rgb(0,255,0)\" />\n" x y r
+svgCircle ((x,y),r) = printf "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" fill=\"rgb(%d,%d,%d)\" />\n" x y r (unsafePerformIO funcCor) (unsafePerformIO funcCor) (unsafePerformIO funcCor)
+        
+
+-- Esta função gera um número randômico no intervalo de 0 a 255        
+funcCor :: IO Int
+funcCor = randomRIO (0, 255)
         
         
 -- Função para calcular o tamanho do raio através das frequencias do dataset, e transforma a lista em float
@@ -94,10 +100,6 @@ funcDadoscirc circulo1 (x,y) raio a t =
         let ponto = funcEspiral circulo1 circulo2 a t
                 where circulo2 = ((x,y),head(tail raio))
         in circulo1 : funcDadoscirc (fst ponto) (x,y) (tail raio) a (snd ponto)    
-
-        
-funcCor :: IO Int
-funcCor = randomRIO (0, 255)
 
 
 -- Função que lista todos os círculos
