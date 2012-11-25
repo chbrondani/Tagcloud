@@ -59,6 +59,12 @@ svgViewBox w h =
                 " version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\">\n" ++
         printf "<rect x=\"0\" y=\"0\" width=\"%d\" height=\"%d\" style=\"fill:white;stroke:purple;stroke-width:4\"/>\n" w h
             
+            
+-- Gera string representando um circulo em SVG. A cor do circulo esta fixa. 
+-- TODO: Alterar esta funcao para mostrar um circulo de uma cor fornecida como parametro.
+svgCircle :: Circle -> String
+svgCircle ((x,y),r) = printf "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" fill=\"rgb(0,255,0)\" />\n" x y r
+        
         
 -- Função para calcular o tamanho do raio através das frequencias do dataset, e transforma a lista em float
 -- Peguei 5% (por isso a divisão por 20) de cada frequência do dataset para o raio.
@@ -69,12 +75,25 @@ funcRaio dataset = (fromIntegral (head dataset)/20)+3 : funcRaio (tail dataset)
             
 
 -- Função que gera os circulos do tipo Circle ((x,y),raio)
+-- Ela chama outra função enviando todos os elementos do círculo, além de um valor para o a e o t
 funcJunta :: Float -> Float -> [Float] -> String
 funcJunta  _ _ [] = []
-funcJunta x y raio = svgCircle ((x,y),head raio) ++ (funcJunta ponto_x ponto_y (tail raio))
-        where ponto_x = x+(1*0.1*(cos 0.1))
-              ponto_y = y+(1*0.1*(sin 0.1))
-              --raio = fromIntegral (head dataset)/20
+funcJunta x y raio = 
+        let monta = funcDadoscirc circulo1 (x,y) raio a t  
+                where circulo1 = ((x,y),head raio)
+                      a = 2
+                      t = 1
+        in lisCircle monta 
+        
+        
+-- Função que gera os circulos do tipo Circle ((x,y),raio)
+-- Vai inserindo os círculos na lista, mas antes é necessario chamar a funcao da espiral e verificar se possui interseccao
+funcDadoscirc :: Circle -> Point -> [Float] -> Float -> Float -> [Circle]
+funcDadoscirc _ _ [] _ _ = []
+funcDadoscirc circulo1 (x,y) raio a t = 
+        let ponto = funcEspiral circulo1 circulo2 a t
+                where circulo2 = ((x,y),head(tail raio))
+        in circulo1 : funcDadoscirc (fst ponto) (x,y) (tail raio) a (snd ponto)    
 
         
 funcCor :: IO Int
@@ -85,12 +104,6 @@ funcCor = randomRIO (0, 255)
 lisCircle :: [Circle] -> String
 lisCircle [] = []
 lisCircle (h:t) = svgCircle (h) ++ lisCircle t 
-
-
--- Gera string representando um circulo em SVG. A cor do circulo esta fixa. 
--- TODO: Alterar esta funcao para mostrar um circulo de uma cor fornecida como parametro.
-svgCircle :: Circle -> String
-svgCircle ((x,y),r) = printf "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" fill=\"rgb(0,255,0)\" />\n" x y r
  
        
 -- Esta função verifica se 2 círculos possuem intersecção
@@ -106,7 +119,7 @@ funcInterseccao ((x1,y1),r1) ((x2,y2),r2)
 -- Esta função coloca um ponto na espiral que não tenha intersecção
 funcEspiral :: Circle -> Circle -> Float -> Float-> (Circle, Float) -- (Circle, Float): o Circle corresponde ao círculo que será criado na espiral e o Float é o t.
 funcEspiral ((x,y),r) (novoPonto,novoR) a t
-        |k == True = funcEspiral ((x,y),r) ((novoX,novoY),novoR) a (t + (0.03)) -- Se tem interseccao, é necessário deslocar este ponto, alterando o t.
+        |k == True = funcEspiral ((x,y),r) ((novoX,novoY),novoR) a (t + (0.3)) -- Se tem interseccao, é necessário deslocar este ponto, alterando o t.
         |otherwise = (((novoX, novoY),novoR),t)
         where k = funcInterseccao ((x,y),r) ((novoX,novoY),novoR) 
               novoX = (fst novoPonto) + (a*t*(cos t))
