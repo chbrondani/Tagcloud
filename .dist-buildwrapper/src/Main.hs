@@ -44,41 +44,12 @@ svgCloudGen w h dataset =
         (concat (svgBubbleGen w h dataset)) ++ "</svg>\n"
 
 
--- Esta funcao deve gerar a lista de circulos em formato SVG.
--- A implementacao atual eh apenas um teste que gera um circulo posicionado no meio da figura.
--- TODO: Alterar essa funcao para usar os dados do dataset.
+-- Funcao que gera a lista de circulos em formato SVG.
+-- uso da funcao reverse: cria uma nova sequência do original com itens na ordem inversa 
+-- uso da funcao sort: serve para ordenar
 svgBubbleGen:: Int -> Int -> [Int] -> [String]
-svgBubbleGen w h dataset = [funcJunta (fromIntegral w/2) (fromIntegral h/2) (reverse (sort dataset))]----funcao reverse: cria uma nova sequência do original com itens na ordem inversa e funcao sort: serve para ordenar
-        --where raio = funcRaio dataset
-        
-        
--- Função para calcular o tamanho do raio através das frequencias do dataset
-funcRaio :: [Int] -> [Float]
-funcRaio [] = []
-funcRaio dataset = (fromIntegral (head dataset)/20) : funcRaio (tail dataset) -- Peguei 5% (por isso a divisão por 20) de cada frequência do dataset para o raio.
-
-
--- Função que gera os circulos do tipo Circle ((x,y),raio,(r,g,b))
-funcJunta :: Float -> Float -> [Int] -> String
-funcJunta  _ _ [] = []
-funcJunta x y dataset = svgCircle ((x,y), raio) ++ (funcJunta ponto_x ponto_y (tail dataset))
-        where ponto_x = x*0.1*(cos 0.1)
-              ponto_y = y*0.1*(sin 0.1)
-              raio = fromIntegral (head dataset)/20
-        
-
--- Gera string representando um circulo em SVG. A cor do circulo esta fixa. 
--- TODO: Alterar esta funcao para mostrar um circulo de uma cor fornecida como parametro.
-funcCor :: IO Int
-funcCor = randomRIO (0, 255)
-
--- Função que lista todos os círculos
-lisCircle :: [Circle] -> [String]
-lisCircle [] = []
-lisCircle (h:t) = svgCircle (h) : lisCircle t 
-
-svgCircle :: Circle -> String
-svgCircle ((x,y),raiocirc) = printf "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" fill=\"rgb(%d,%d,%d)\" />\n" x y raiocirc
+svgBubbleGen w h dataset = [funcJunta (fromIntegral w/2) (fromIntegral h/2) (reverse (sort raio))] 
+        where raio = funcRaio dataset
 
 
 -- Configura o viewBox da imagem e coloca retangulo branco no fundo
@@ -87,8 +58,41 @@ svgViewBox w h =
         printf "<svg width=\"%d\" height=\"%d\" viewBox=\"0 0 %d %d\"" w h w h ++ 
                 " version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\">\n" ++
         printf "<rect x=\"0\" y=\"0\" width=\"%d\" height=\"%d\" style=\"fill:white;stroke:purple;stroke-width:4\"/>\n" w h
+            
         
+-- Função para calcular o tamanho do raio através das frequencias do dataset, e transforma a lista em float
+-- Peguei 5% (por isso a divisão por 20) de cada frequência do dataset para o raio.
+-- Somei 3, pois tendo como entrada: funcRaio [1,5,2,6,1], a saída: [5.0e-2,0.25,0.1,0.3,5.0e-2]
+funcRaio :: [Int] -> [Float]
+funcRaio [] = []
+funcRaio dataset = (fromIntegral (head dataset)/20)+3 : funcRaio (tail dataset) 
+            
 
+-- Função que gera os circulos do tipo Circle ((x,y),raio)
+funcJunta :: Float -> Float -> [Float] -> String
+funcJunta  _ _ [] = []
+funcJunta x y raio = svgCircle ((x,y),head raio) ++ (funcJunta ponto_x ponto_y (tail raio))
+        where ponto_x = x+(1*0.1*(cos 0.1))
+              ponto_y = y+(1*0.1*(sin 0.1))
+              --raio = fromIntegral (head dataset)/20
+
+        
+funcCor :: IO Int
+funcCor = randomRIO (0, 255)
+
+
+-- Função que lista todos os círculos
+lisCircle :: [Circle] -> String
+lisCircle [] = []
+lisCircle (h:t) = svgCircle (h) ++ lisCircle t 
+
+
+-- Gera string representando um circulo em SVG. A cor do circulo esta fixa. 
+-- TODO: Alterar esta funcao para mostrar um circulo de uma cor fornecida como parametro.
+svgCircle :: Circle -> String
+svgCircle ((x,y),r) = printf "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" fill=\"rgb(0,255,0)\" />\n" x y r
+ 
+       
 -- Esta função verifica se 2 círculos possuem intersecção
 funcInterseccao :: Circle -> Circle -> Bool
 funcInterseccao ((x1,y1),r1) ((x2,y2),r2)
@@ -98,11 +102,12 @@ funcInterseccao ((x1,y1),r1) ((x2,y2),r2)
               xC = (x2 - x1) ^ 2 
               yC = (y2 - y1) ^ 2 
               
+              
 -- Esta função coloca um ponto na espiral que não tenha intersecção
 funcEspiral :: Circle -> Circle -> Float -> Float-> (Circle, Float) -- (Circle, Float): o Circle corresponde ao círculo que será criado na espiral e o Float é o t.
-funcEspiral ((x,y),r) (ponto,novoR) a t
+funcEspiral ((x,y),r) (novoPonto,novoR) a t
         |k == True = funcEspiral ((x,y),r) ((novoX,novoY),novoR) a (t + (0.03)) -- Se tem interseccao, é necessário deslocar este ponto, alterando o t.
         |otherwise = (((novoX, novoY),novoR),t)
         where k = funcInterseccao ((x,y),r) ((novoX,novoY),novoR) 
-              novoX = novoX + (a*t*(cos t))
-              novoY = novoY + (a*t*(sin t))
+              novoX = (fst novoPonto) + (a*t*(cos t))
+              novoY = (snd novoPonto) + (a*t*(sin t))
