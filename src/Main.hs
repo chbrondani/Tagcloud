@@ -22,8 +22,6 @@ main = do
         strcontent <- readFile infile
         let pairs = map (span (/= ' ')) (lines strcontent)
             freqs = readInts (map snd pairs)
-            --freq = head freqs
-        --print freq
         writeFile outfile (svgCloudGen imageWidth imageHeight freqs)
         putStrLn "Ok!"
         where 
@@ -80,29 +78,29 @@ funcRaio [] = []
 funcRaio dataset = (fromIntegral (head dataset)/20)+3 : funcRaio (tail dataset) 
             
 
--- Função que gera os circulos do tipo Circle ((x,y),raio)
+-- Função que gera os circulos
 -- Ela chama outra função enviando todos os elementos do círculo, além de um valor para o a e o t
 funcJunta :: Float -> Float -> [Float] -> String
 funcJunta  _ _ [] = []
 funcJunta x y raio = 
-        let monta = funcDadoscirc circulo1 (x,y) raio a t  
+        let monta = funcDadoscirc circulo1 (x,y) raio t  
                 where circulo1 = ((x,y),head raio)
-                      a = 2
-                      t = 1
-        in lisCircle monta 
+                      -- a = 1 -- Comentei essa linha, pois deixei o a fixado em 1, logo nao influenciará nos cálculos a*t*cos t e a*t*sen t
+                      t = 0
+        in lisCircle monta -- Aqui manda a lista de círculos gerada pela funcDadoscirc para a função lisCircle que gera o svg    
         
         
--- Função que gera os circulos do tipo Circle ((x,y),raio)
+-- Função que cria uma lista de círculos
 -- Vai inserindo os círculos na lista, mas antes é necessario chamar a funcao da espiral e verificar se possui interseccao
-funcDadoscirc :: Circle -> Point -> [Float] -> Float -> Float -> [Circle]
-funcDadoscirc _ _ [] _ _ = []
-funcDadoscirc circulo1 (x,y) raio a t = 
-        let ponto = funcEspiral circulo1 circulo2 a t
-                where circulo2 = ((x,y),head(tail raio))
-        in circulo1 : funcDadoscirc (fst ponto) (x,y) (tail raio) a (snd ponto)    
-
-
--- Função que lista todos os círculos
+funcDadoscirc :: Circle -> Point -> [Float] -> Float -> [Circle]
+funcDadoscirc _ _ [] _ = [] -- A condição de parada é quando a lista de raios for vazia
+funcDadoscirc circulo1 (x2,y2) raio t = 
+        let ponto = funcEspiral circulo1 circulo2 t
+                where circulo2 = ((x2,y2),head(tail raio))
+        in circulo1 : funcDadoscirc ponto (x2,y2) (tail raio) t
+                                                                                                                                                                   
+                                                                                
+-- Função que lista todos os círculos em svg
 lisCircle :: [Circle] -> String
 lisCircle [] = []
 lisCircle (h:t) = svgCircle (h) ++ lisCircle t 
@@ -119,10 +117,12 @@ funcInterseccao ((x1,y1),r1) ((x2,y2),r2)
               
               
 -- Esta função coloca um ponto na espiral que não tenha intersecção
-funcEspiral :: Circle -> Circle -> Float -> Float-> (Circle, Float) -- (Circle, Float): o Circle corresponde ao círculo que será criado na espiral e o Float é o t.
-funcEspiral ((x,y),r) (novoPonto,novoR) a t
-        |k == True = funcEspiral ((x,y),r) ((novoX,novoY),novoR) a (t + (0.3)) -- Se tem interseccao, é necessário deslocar este ponto, alterando o t.
-        |otherwise = (((novoX, novoY),novoR),t)
-        where k = funcInterseccao ((x,y),r) ((novoX,novoY),novoR) 
-              novoX = (fst novoPonto) + (a*t*(cos t))
-              novoY = (snd novoPonto) + (a*t*(sin t))
+funcEspiral :: Circle -> Circle -> Float -> (Circle) 
+funcEspiral ((x,y),r) (novoPonto,novoR) t
+        |k == True = funcEspiral circulo1 circulo2 (t+0.01) -- Se tem interseccao, é necessário deslocar este ponto, alterando o t.
+        |otherwise = (circulo2)
+        where k = funcInterseccao circulo1 circulo2 
+              circulo1 = ((x,y),r)
+              circulo2 = ((novoX,novoY),novoR)
+              novoX = (fst novoPonto) + (t*(cos t))
+              novoY = (snd novoPonto) + (t*(sin t))
