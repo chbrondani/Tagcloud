@@ -44,7 +44,7 @@ svgCloudGen w h dataset =
 
 
 -- Funcao que gera a lista de circulos em formato SVG.
--- uso da funcao reverse: cria uma nova sequência do original com itens na ordem inversa 
+-- uso da funcao reverse: cria uma nova sequência da original com itens na ordem inversa 
 -- uso da funcao sort: serve para ordenar
 svgBubbleGen:: Int -> Int -> [Int] -> [String]
 svgBubbleGen w h dataset = lisCircle (funcJunta [] (fromIntegral w/2) (fromIntegral h/2) (reverse (sort raio)))
@@ -72,51 +72,49 @@ funcCor = randomRIO (0, 255)
         
 -- Função para calcular o tamanho do raio através das frequencias do dataset, e transforma a lista em float
 -- Peguei 5% (por isso a divisão por 20) de cada frequência do dataset para o raio.
--- Somei 3, pois tendo como entrada: funcRaio [1,5,2,6,1], a saída: [5.0e-2,0.25,0.1,0.3,5.0e-2]
+-- Somei 3 (para o menor raio ficar visível), pois tendo como entrada: funcRaio [1,5,2,6,1], a saída: [5.0e-2,0.25,0.1,0.3,5.0e-2]
 funcRaio :: [Int] -> [Float]
 funcRaio [] = []
 funcRaio dataset = (fromIntegral (head dataset)/20)+3 : funcRaio (tail dataset) 
             
 
--- Função que gera os circulos
--- Ela chama outra função enviando todos os elementos do círculo, além de um valor para o a e o t
+-- Função que gera a lista de circulos
 funcJunta :: [Circle] -> Float -> Float -> [Float] -> [Circle]
-funcJunta _ _ _ [] = []
-funcJunta lista x y raio = circulo2 : funcJunta lista v z (tail raio)      
-         where  circulo2 = (funcEspiral lista circulo t)
-                circulo = ((x,y),head raio)
-                v = (fst (fst circulo))
-                z = (snd (fst circulo))
-                -- a = 1 -- Comentei essa linha, pois deixei o a fixado em 1, logo nao influenciará nos cálculos a*t*cos t e a*t*sen t
-                t = 0                                                                                                                                                                       
-
-                                                                                
+funcJunta lista _ _ [] = lista
+funcJunta lista x y raio = funcJunta (lista ++ (funcEspiral lista circulo t)) x y (tail raio)
+        where circulo = ((x,y),head raio)     
+              -- a = 1 -- Comentei essa linha, pois deixei o a fixado em 1, logo nao influenciará nos cálculos a*t*cos t e a*t*sen t
+              t = 0                                                                                                                                                                              
+        
+                          
+-- Esta função coloca um ponto na espiral que não tenha intersecção
+funcEspiral :: [Circle] -> Circle -> Float -> [Circle]
+funcEspiral lista ((x,y),r) t
+        |k == True = funcEspiral lista ((novoX,novoY),r) (t+0.2) -- Se tem interseccao, é necessário deslocar este ponto, alterando o t.
+        |otherwise = [((x,y),r)] -- Este é o círculo sem intersecção
+        where k = funcInterseccao lista ((x,y),r) 
+              novoX = abs(x + (t*(cos t)))
+              novoY = abs(y + (t*(sin t)))   
+              
+                                                                                              
 -- Função que lista todos os círculos em svg
 lisCircle :: [Circle] -> [String]
 lisCircle [] = []
 lisCircle (h:t) = svgCircle (h) : lisCircle t 
  
        
--- Esta função verifica se 2 círculos possuem intersecção
+-- Esta função analisa se possui intersecção entre o círculo que quer ser inserido e a lista de círculos
 funcInterseccao :: [Circle] -> Circle -> Bool
 funcInterseccao [] _ = False
-funcInterseccao lista ((x,y),r) = funcDistancia ((x,y),r) (head lista) || (funcInterseccao (tail lista) ((x,y),r))  
+funcInterseccao lista circulo = funcDistancia circulo (head lista) || (funcInterseccao (tail lista) circulo) 
+-- Ex: Tem interseccão e lista de circulos está vazia então (True || False) é igual a True 
 
 
+-- Esta função calcula a distância entre 2 círculos
 funcDistancia :: Circle -> Circle -> Bool
 funcDistancia ((x1,y1),r1) ((x2,y2),r2)
         |distancia > r1+r2 = False
         |otherwise         = True
         where distancia = sqrt (xC+yC)
               xC = (x2 - x1) ^ 2 
-              yC = (y2 - y1) ^ 2 
-              
-              
--- Esta função coloca um ponto na espiral que não tenha intersecção
-funcEspiral :: [Circle] -> Circle -> Float -> Circle
-funcEspiral lista ((x,y),r) t
-        |k == True = funcEspiral lista ((novoX,novoY),r) (t+0.9) -- Se tem interseccao, é necessário deslocar este ponto, alterando o t.
-        |otherwise = ((novoX,novoY),r)
-        where k = funcInterseccao lista ((x,y),r) 
-              novoX = abs(x + (t*(cos t)))
-              novoY = abs(y + (t*(sin t)))      
+              yC = (y2 - y1) ^ 2    
